@@ -2448,6 +2448,76 @@ describe("AgentServerConversationService", () => {
       expect(requests[0].body).toEqual({ public: true });
     });
 
+    it("updates repository selections on the cloud backend via PATCH", async () => {
+      setRegisteredBackends([cloudBackend]);
+      setActiveSelection({ backendId: cloudBackend.id });
+      const updated = {
+        id: "conv-cloud",
+        selected_repository: "OpenHands/OpenHands",
+        selected_branch: "main",
+        git_provider: "github",
+      };
+      server.use(
+        http.get(`${cloudBackend.host}/api/v1/app-conversations`, () =>
+          HttpResponse.json([updated]),
+        ),
+      );
+      const requests = captureRequests(["patch"], updated);
+
+      const result =
+        await AgentServerConversationService.updateConversationRepository(
+          "conv-cloud",
+          "OpenHands/OpenHands",
+          "main",
+          "github",
+        );
+
+      expect(requests).toHaveLength(1);
+      expect(requests[0].method).toBe("PATCH");
+      expect(requests[0].url).toContain("/api/v1/app-conversations/conv-cloud");
+      expect(requests[0].body).toEqual({
+        selected_repository: "OpenHands/OpenHands",
+        selected_branch: "main",
+        git_provider: "github",
+      });
+      expect(result).toMatchObject(updated);
+    });
+
+    it("falls back to local metadata when cloud PATCH fails", async () => {
+      setRegisteredBackends([cloudBackend]);
+      setActiveSelection({ backendId: cloudBackend.id });
+      const fallbackConv = {
+        id: "conv-cloud",
+        selected_repository: null,
+        selected_branch: null,
+        git_provider: null,
+      };
+      server.use(
+        http.patch(
+          `${cloudBackend.host}/api/v1/app-conversations/conv-cloud`,
+          () => new HttpResponse(null, { status: 500 }),
+        ),
+        http.get(`${cloudBackend.host}/api/v1/app-conversations`, () =>
+          HttpResponse.json([fallbackConv]),
+        ),
+      );
+
+      const result =
+        await AgentServerConversationService.updateConversationRepository(
+          "conv-cloud",
+          "OpenHands/OpenHands",
+          "main",
+          "github",
+        );
+
+      expect(result.selected_repository).toBe("OpenHands/OpenHands");
+      expect(getStoredConversationMetadata("conv-cloud")).toMatchObject({
+        selected_repository: "OpenHands/OpenHands",
+        selected_branch: "main",
+        git_provider: "github",
+      });
+    });
+
     it("forks at an event, keeps the supplied title, and carries repository metadata", async () => {
       mockHttpGet.mockResolvedValue({
         data: [makeDirectConversation({ id: "source-conv" })],

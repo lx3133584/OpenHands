@@ -239,6 +239,30 @@ export async function updateCloudConversationTitle(
 }
 
 /**
+ * Update the repository selection for a cloud v1 app-conversation.
+ * Mirrors the original OpenHands PATCH /api/v1/app-conversations/{id}
+ * payload ({ selected_repository, selected_branch, git_provider }).
+ */
+export async function updateCloudConversationRepository(
+  conversationId: string,
+  repository: string | null,
+  branch?: string | null,
+  gitProvider?: string | null,
+): Promise<AppConversation> {
+  const backend = getActiveCloudBackend();
+  return callCloudProxy<AppConversation>({
+    backend,
+    method: "PATCH",
+    path: `/api/v1/app-conversations/${conversationId}`,
+    body: {
+      selected_repository: repository,
+      selected_branch: branch ?? null,
+      git_provider: gitProvider ?? null,
+    },
+  });
+}
+
+/**
  * Pause the cloud sandbox backing a v1 app-conversation. Mirrors
  * OpenHands' `SandboxService.pauseSandbox`:
  * `POST /api/v1/sandboxes/{sandboxId}/pause` on the cloud backend, which stops

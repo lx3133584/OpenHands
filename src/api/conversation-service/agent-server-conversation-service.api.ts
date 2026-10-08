@@ -34,6 +34,7 @@ import {
   readCloudConversationFile,
   searchCloudConversations,
   updateCloudConversationPublicFlag,
+  updateCloudConversationRepository,
   updateCloudConversationTitle,
 } from "../cloud/conversation-service.api";
 import {
@@ -839,6 +840,20 @@ class AgentServerConversationService {
       });
     } else {
       removeStoredConversationMetadata(conversationId);
+    }
+    if (getActiveBackend().backend.kind === "cloud") {
+      try {
+        await updateCloudConversationRepository(
+          conversationId,
+          repository,
+          branch,
+          gitProvider,
+        );
+      } catch {
+        // If the cloud server rejects the update (for example an older server
+        // that rejects org/project/repo names or is temporarily unavailable),
+        // keep local storage updated so the current browser still connects the repo.
+      }
     }
     const [conversation] = await this.batchGetAppConversations([
       conversationId,

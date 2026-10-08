@@ -11,6 +11,7 @@ import {
   createCloudAppConversation,
   pickCloudBackendForLaunch,
   searchCloudConversations,
+  updateCloudConversationRepository,
 } from "#/api/cloud/conversation-service.api";
 import { AGENT_CANVAS_CLIENT_HEADERS } from "#/api/client-source";
 
@@ -314,5 +315,63 @@ describe("cloud conversation-service overlay", () => {
     expect(page.items[0].selected_branch).toBe("main");
     expect(page.items[0].git_provider).toBe("github");
     expect(page.items[1].selected_repository).toBeNull();
+  });
+
+  it("updates conversation repository via PATCH on the cloud backend", async () => {
+    mockCallCloudProxy.mockResolvedValueOnce({
+      id: "conv-1",
+      title: "Hello",
+      selected_repository: "octocat/hello-world",
+      selected_branch: "main",
+      git_provider: "github",
+    });
+
+    const result = await updateCloudConversationRepository(
+      "conv-1",
+      "octocat/hello-world",
+      "main",
+      "github",
+    );
+
+    expect(mockCallCloudProxy).toHaveBeenCalledWith({
+      backend: cloudBackend,
+      method: "PATCH",
+      path: "/api/v1/app-conversations/conv-1",
+      body: {
+        selected_repository: "octocat/hello-world",
+        selected_branch: "main",
+        git_provider: "github",
+      },
+    });
+    expect(result.selected_repository).toBe("octocat/hello-world");
+  });
+
+  it("allows clearing conversation repository on the cloud backend", async () => {
+    mockCallCloudProxy.mockResolvedValueOnce({
+      id: "conv-1",
+      title: "Hello",
+      selected_repository: null,
+      selected_branch: null,
+      git_provider: null,
+    });
+
+    const result = await updateCloudConversationRepository(
+      "conv-1",
+      null,
+      null,
+      null,
+    );
+
+    expect(mockCallCloudProxy).toHaveBeenCalledWith({
+      backend: cloudBackend,
+      method: "PATCH",
+      path: "/api/v1/app-conversations/conv-1",
+      body: {
+        selected_repository: null,
+        selected_branch: null,
+        git_provider: null,
+      },
+    });
+    expect(result.selected_repository).toBeNull();
   });
 });
