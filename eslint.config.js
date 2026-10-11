@@ -451,7 +451,10 @@ export default [
           ],
         },
       ],
-      "shadcn/no-inline-styles": "off",
+      // Warning-only while measured layout, portal placement, accessibility
+      // helpers and renderer interfaces are reviewed by their owners. The rule
+      // permits CSS variables itself; no broad property/color exception is needed.
+      "shadcn/no-inline-styles": "warn",
       "shadcn/require-static-classes": [
         "error",
         { componentImports: ["^#/ui(/|$)"] },
@@ -477,5 +480,11 @@ export default [
       "shadcn/no-restyle": "off",
       "shadcn/require-static-classes": "off",
     },
+  },
+  {
+    // Public embedding API: this owner must forward arbitrary caller styles.
+    // Its opaque object cannot be converted to custom-properties-only styles.
+    files: ["src/components/providers/agent-server-ui-root.tsx"],
+    rules: { "shadcn/no-inline-styles": "off" },
   },
 ];
