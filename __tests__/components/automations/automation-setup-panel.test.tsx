@@ -1634,13 +1634,28 @@ describe("AutomationSetupPanel", () => {
       expect(validity.previousElementSibling).toContainElement(
         screen.getByTestId("automation-setup-draft-test"),
       );
+      expect(validity).toHaveClass(
+        "bg-feedback-error/5",
+        "text-feedback-error",
+      );
+      expect(validity).not.toHaveClass("bg-red-500/5");
       await user.click(screen.getByTestId("automation-setup-test"));
 
-      await waitFor(() =>
-        expect(
-          screen.getByTestId("automation-setup-draft-runs-error"),
-        ).toHaveTextContent("Minimum interval is 5 minutes."),
-      );
+      await waitFor(() => {
+        const errorAlert = screen.getByTestId(
+          "automation-setup-draft-runs-error",
+        );
+        expect(errorAlert).toHaveTextContent("Minimum interval is 5 minutes.");
+        expect(errorAlert).toHaveClass(
+          "border-feedback-error/40",
+          "bg-feedback-error/10",
+          "text-feedback-error",
+        );
+        expect(errorAlert).not.toHaveClass(
+          "border-red-500/40",
+          "bg-red-500/10",
+        );
+      });
       expect(
         screen.queryByTestId("automation-setup-status"),
       ).not.toBeInTheDocument();
